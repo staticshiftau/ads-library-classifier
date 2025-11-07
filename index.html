@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Static Shift Ads Library - Submit Ad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1D2736 0%, #0f1419 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #1D2736;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+            font-weight: 400;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 200px;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #1D2736;
+        }
+        
+        .helper-text {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+            font-weight: 400;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #1D2736;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(29, 39, 54, 0.4);
+            opacity: 0.9;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-message.rejected {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Ads Library Classifier</h1>
+            <p>Paste ad copy or describe an ad you found</p>
+        </div>
+        
+        <form id="adForm">
+            <div class="form-group">
+                <label for="adContent">Ad Content</label>
+                <textarea 
+                    id="adContent" 
+                    name="adContent" 
+                    placeholder="Paste the ad copy here, or describe what you see in the ad (headline, copy, CTA, visual style, etc.)
+
+You can also include:
+- Brand/Advertiser name
+- Industry
+- Creative URL
+- Landing page URL
+- Any other context that helps classify it
+
+Example:
+I saw an ad from King Kong Co. for ecommerce growth. 
+Headline: 'I went from a 2 ROAS to 10 overnight doing this...'
+Copy talks about CPMs being high, uses humour, mentions specific case studies like $0 to $13M in 12 months for mattress company..."
+                    required
+                ></textarea>
+                <div class="helper-text">
+                    Pro tip: The more details you provide, the better the classification!
+                </div>
+            </div>
+            
+            <button type="submit" id="submitBtn">
+                <span id="btnText">Analyse & Add to Library</span>
+                <span id="btnLoading" class="loading" style="display: none;"></span>
+            </button>
+        </form>
+        
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script>
+        // UPDATE THIS WITH YOUR ACTUAL n8n WEBHOOK URL
+        const WEBHOOK_URL = 'https://n8n.srv951152.hstgr.cloud/webhook/ads-library-submit';
+        
+        const form = document.getElementById('adForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoading = document.getElementById('btnLoading');
+        const statusMessage = document.getElementById('statusMessage');
+        const adContentInput = document.getElementById('adContent');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const adContent = adContentInput.value.trim();
+            
+            if (!adContent) {
+                showStatus('Please enter ad content!', 'error');
+                return;
+            }
+            
+            // Disable form during submission
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
+            statusMessage.style.display = 'none';
+            
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ adContent })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.status === 'success') {
+                        showStatus(
+                            `✅ Success! Ad added to library (Rating: ${data.rating}/5)<br>Brand: ${data.brand}`,
+                            'success'
+                        );
+                        adContentInput.value = ''; // Clear the form
+                    } else if (data.status === 'rejected') {
+                        showStatus(
+                            `⚠️ ${data.message}<br>This ad wasn't added to maintain library quality.`,
+                            'rejected'
+                        );
+                    }
+                } else {
+                    throw new Error(data.message || 'Something went wrong');
+                }
+                
+            } catch (error) {
+                showStatus(
+                    `❌ Error: ${error.message}<br>Please try again or contact support.`,
+                    'error'
+                );
+            } finally {
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        });
+        
+        function showStatus(message, type) {
+            statusMessage.innerHTML = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            // Auto-hide success messages after 5 seconds
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
